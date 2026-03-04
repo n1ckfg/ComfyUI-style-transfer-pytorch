@@ -248,9 +248,10 @@ class EMA(nn.Module):
         return self.value / (1 - self.accum)
 
     def update(self, input):
-        self.accum *= self.decay
-        self.value *= self.decay
-        self.value += (1 - self.decay) * input
+        with torch.no_grad():
+            self.accum *= self.decay
+            self.value *= self.decay
+            self.value += (1 - self.decay) * input
 
 
 def size_to_fit(size, max_dim, scale_up=False):
@@ -307,6 +308,7 @@ class STIterate:
 
 
 class StyleTransfer:
+    @torch.inference_mode(False)
     def __init__(self, devices=['cpu'], pooling='max'):
         self.devices = [torch.device(device) for device in devices]
         self.image = None
@@ -346,6 +348,8 @@ class StyleTransfer:
             else:
                 raise ValueError("image_type must be 'pil' or 'np_uint16'")
 
+    @torch.inference_mode(False)
+    @torch.enable_grad()
     def stylize(self, content_image, style_images, *,
                 style_weights=None,
                 content_weight: float = 0.015,
